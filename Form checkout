@@ -1,0 +1,206 @@
+<?php
+/**
+ * Checkout Form
+ *
+ * This template can be overridden by copying it to yourtheme/woocommerce/checkout/form-checkout.php.
+ *
+ * HOWEVER, on occasion WooCommerce will need to update template files and you
+ * (the theme developer) will need to copy the new files to your theme to
+ * maintain compatibility. We try to do this as little as possible, but it does
+ * happen. When this occurs the version of the template file will be bumped and
+ * the readme will list any important changes.
+ *
+ * @see https://docs.woocommerce.com/document/template-structure/
+ * @package WooCommerce\Templates
+ * @version 3.5.0
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+?>
+
+<?php
+
+remove_action( 'woocommerce_before_checkout_form', 'woocommerce_checkout_login_form', 10 );
+remove_action( 'woocommerce_before_checkout_form', 'woocommerce_checkout_coupon_form', 10 );
+do_action( 'woocommerce_before_checkout_form', $checkout );
+
+// If checkout registration is disabled and not logged in, the user cannot checkout.
+if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_required() && ! is_user_logged_in() ) {
+	echo esc_html( apply_filters( 'woocommerce_checkout_must_be_logged_in_message', __( 'You must be logged in to checkout.', 'woocommerce' ) ) );
+	return;
+}
+
+?>
+
+<?php get_template_part( 'widgets/step-process-list', null, array('step' => 3) ); ?>
+
+<div class="main-custom-wc-container">
+
+<div class="discoverent_etape_checkout checkout_etape_1 <?php if(!is_user_logged_in()){ ?>show<?php } ?>">
+	
+<?php get_template_part( 'widgets/woo-form' ); ?>
+	
+</div>
+
+<div class="discoverent_etape_checkout promo_code_etape checkout_etape_3 ">
+	<h3 id="order_review_heading"><?php esc_html_e( 'Your order', 'woocommerce' ); ?></h3>	
+	<?php 
+		add_action( 'woocommerce_checkout_before_order_review', 'woocommerce_checkout_coupon_form', 10 );
+		do_action( 'woocommerce_checkout_before_order_review' );
+	?>
+</div>
+
+<form name="checkout" method="post" class="checkout woocommerce-checkout" action="<?php echo esc_url( wc_get_checkout_url() ); ?>" enctype="multipart/form-data">
+	<div class="discoverent_etape_checkout checkout_etape_2 <?php if(is_user_logged_in()){ ?>show<?php } ?>">
+
+  <div class="recap-commande">
+    <h3>Récapitulatif de votre commande</h3>
+    <?php get_template_part( 'widgets/custom-cart-form' ); ?>
+  </div>
+
+
+    <h3>Informations importantes</h3>
+		<?php if ( $checkout->get_checkout_fields() ) : ?>
+			<p class="erreur_validation_participants">Veuillez vérifier la liste des participants. L'ensemble des champs doit être rempli</p>
+			<p class="erreur_validation_woo">Veuillez vérifier les informations de facturation</p>
+
+			<?php do_action( 'woocommerce_checkout_before_customer_details' ); ?>
+
+			<div class="col2-set" id="customer_details">
+				<div class="col-1">
+					<?php do_action( 'woocommerce_checkout_billing' ); ?>
+          <label>
+            Commentaire <br />
+            <p class="form-row" style=""><textarea type="text" name="commentaire" placeholder="As-tu des commentaires?"></textarea></p>
+          </label>
+				</div>
+				<div class="col-2">
+				<div class="custom_form_participants">
+					<?php
+						$productInCart = WC()->cart->get_cart_contents();
+						$quantityParticipants = 0;
+						$optionExpedition = array();
+						foreach($productInCart as $item){
+							if( has_term( 'expeditions', 'product_cat', $item['product_id'])) {
+								//var_dump($item);
+								$quantityParticipants = $quantityParticipants + $item['quantity'];
+								if(!in_array(get_the_title( $item['product_id'] ), $optionExpedition)){
+									$optionExpedition[] = get_the_title( $item['product_id'] );
+								}
+							}
+						}
+						for ($i = 0; $i < $quantityParticipants; $i++){ ?>
+						<h3>Participant <?php echo $i+1; ?></h3>
+						<div class="custom_form_participants_item">
+							<!-- <p class="form-row">
+								<select name="participant[<?php echo $i; ?>][expedition]">
+									<option value="">Quelle expédition ?</option>
+									<?php foreach($optionExpedition as $option){ ?>
+										<option value="<?php echo $option; ?>" <?php if(count($optionExpedition) == 1){ echo 'selected'; } ?>><?php echo $option; ?></option>
+									<?php } ?>
+								</select>
+							</p> -->
+							<p class="form-row half"><input type="text" name="participant[<?php echo $i; ?>][nom]" placeholder="Nom*" required></p>
+							<p class="form-row half"><input type="text" name="participant[<?php echo $i; ?>][prenom]" placeholder="Prénom*" required></p>
+							<p class="form-row half"><input type="text" name="participant[<?php echo $i; ?>][email]" placeholder="Email*" required></p>
+							<p class="form-row half"><input type="text" name="participant[<?php echo $i; ?>][telephone]" placeholder="Tel*" required></p>
+							<p class="form-row"><input type="date" name="participant[<?php echo $i; ?>][naissance]" required></p>
+							<p class="form-row"><textarea type="text" name="participant[<?php echo $i; ?>][regime]" placeholder="As-tu un régime allimentaire/allergie?"></textarea></p>
+							<p class="form-row"><label><input type="checkbox" name="participant[<?php echo $i; ?>][level]"> J'ai bien le niveau requis</label></p>
+						</div>
+            
+					<?php } ?>
+				</div>
+				<?php do_action( 'woocommerce_checkout_shipping' ); ?>
+				</div>
+			</div>
+
+			<?php do_action( 'woocommerce_checkout_after_customer_details' ); ?>
+
+		<?php endif; ?>
+		<p class="erreur_validation_participants">Veuillez vérifier la liste des participants. L'ensemble des champs doit être rempli</p>
+		<p class="erreur_validation_woo">Veuillez vérifier les informations de facturation</p>
+		<a href="#" class="btn stepButton" id="last_step">Etape suivante</a>
+	</div>
+	<div class="discoverent_etape_checkout checkout_etape_3 last_etape">
+		<?php do_action( 'woocommerce_checkout_before_order_review_heading' ); ?>
+		
+		<div class="custom_order_wrapper">
+
+			<div id="order_review" class="woocommerce-checkout-review-order">
+				<?php do_action( 'woocommerce_checkout_order_review' ); ?>
+			</div>
+
+			<?php do_action( 'woocommerce_checkout_after_order_review' ); ?>
+		</div>
+	</div>
+
+</form>
+
+<?php do_action( 'woocommerce_after_checkout_form', $checkout ); ?>
+
+</div>
+
+<style>
+.highlight-field {
+    border: 2px solid red !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var nextStepButton = document.getElementById('last_step');
+    nextStepButton.addEventListener('click', function(event) {
+        var requiredFields = document.querySelectorAll('input[required], textarea[required]');
+        var hasEmptyField = false;
+        var commentaireEmpty = true;
+        var regimeEmpty = true;
+        var participants = document.querySelectorAll('div.custom_form_participants_item');
+
+        requiredFields.forEach(function(field) {
+            // Vérifier si le champ est requis
+            if (field.hasAttribute('required') && field.value.trim() === '') {
+                if (field.name === 'commentaire') {
+                    commentaireEmpty = true;
+                }
+                else if (field.name === 'participant[0][regime]') {
+                    regimeEmpty = true;
+                }
+                else {
+                    field.classList.add('highlight-field');
+                    hasEmptyField = true;
+                }
+            } else {
+                field.classList.remove('highlight-field');
+            }
+        });
+
+        // Vérifier si un ou plusieurs champs obligatoires sont vides,
+        // mais que seul le champ commentaire ou régime alimentaire reste vide
+        if (hasEmptyField && !(commentaireEmpty && regimeEmpty)) {
+            event.preventDefault();
+            alert('Veuillez remplir tous les champs obligatoires.');
+        }
+
+        // Vérifier si la checkbox "J'ai bien le niveau requis" n'est pas cochée pour chaque participant
+        participants.forEach(function(participant) {
+            var levelCheckbox = participant.querySelector('input[name^="participant["][name$="][level]"]');
+            var levelCheckboxLabel = participant.querySelector('input[name^="participant["][name$="][level]"]').parentElement;
+
+            if (!levelCheckbox.checked) {
+                var missingLevelText = document.createElement('p');
+                missingLevelText.textContent = 'Champ manquant';
+                missingLevelText.style.color = 'red';
+                levelCheckboxLabel.appendChild(missingLevelText);
+            } else {
+                var existingMissingLevelText = levelCheckboxLabel.querySelector('p');
+                if (existingMissingLevelText) {
+                    levelCheckboxLabel.removeChild(existingMissingLevelText);
+                }
+            }
+        });
+    });
+});
+</script>
